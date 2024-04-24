@@ -1,0 +1,47 @@
+name: swift-fmt
+
+on:
+  pull_request:
+    branches: [main]
+    paths: ['**/*.swift']
+
+env:
+  TOKEN: ${{ secrets.VILLALEO_PAT }}
+
+jobs:
+  reformat-codebase:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ env.TOKEN }}
+
+      - name: Setup XCode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Clone apple/swift-format
+        run: |
+          git clone https://github.com/apple/swift-format.git
+      
+      - name: Reformat the codebase
+        run: |
+          cd swift-format
+          swift build -c release
+          cd ..
+          swift-format/.build/release/./swift-format format --in-place --parallel --recursive 'MyCloset Assistant/'
+
+      - name: Commit the changes
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: -A
+          author_name: SwiftReformatter
+          author_email: villaleobos@gmail.com
+          fetch: false
+          message: Reformat code via GitHub Action swift-fmt
+        
